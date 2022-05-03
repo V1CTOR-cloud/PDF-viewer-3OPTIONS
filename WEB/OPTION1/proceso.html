@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <link rel="stylesheet" href="/CSS/prueba.css">
+
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <!--<script src="https://raw.githubusercontent.com/mozilla/pdf.js/master/web/ui_utils.js"></script>-->
+    <!--<script src="https://raw.githubusercontent.com/mozilla/pdf.js/master/web/text_layer_builder.js"></script>-->
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1 class="titulo">
+            <span>Velneo</span> PDF viewer
+        </h1>
+        <div class="cont-btn">
+            <button id="prev">Previous</button>
+            <button id="next">Next</button> &nbsp; &nbsp;
+            <button id="copy" class="copy" onclick="copiado()" data-clipboard-target="#copyme"> <ion-icon name="copy-outline"></ion-icon>Copy to clipboard</button>
+            <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+        </div>
+    </header>
+    <div class="container">
+        <div class="cont1">
+            <canvas id="the-canvas"></canvas>
+        </div>
+        <div class="cont2">
+            <div class="textLayer" id="copyme"></div>
+        </div>
+    </div>
+
+    <script>
+        var url = localStorage.getItem('PDF');
+        // Loaded via <script> tag, create shortcut to access PDF.js exports.
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+        // The workerSrc property shall be specified.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+        var pdfDoc = null,
+            pageNum = 1,
+            pageRendering = false,
+            pageNumPending = null,
+            //scale = 0.8,
+            scale = 1.2,
+            canvas = document.getElementById('the-canvas'),
+            ctx = canvas.getContext('2d');
+
+        /**
+         * Get page info from document, resize canvas accordingly, and render page.
+         * @param num Page number.
+         */
+        function renderPage(num) {
+            pageRendering = true;
+            // Using promise to fetch the page
+            pdfDoc.getPage(num).then(function(page) {
+                var viewport = page.getViewport({
+                    scale: scale
+                });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render PDF page into canvas context
+                var renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                var renderTask = page.render(renderContext);
+
+                // Wait for rendering to finish
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        // New page rendering is pending
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                }).then(function() {
+                    // Returns a promise, on resolving it will return text contents of the page
+
+                    return page.getTextContent();
+                }).then(function(textContent) {
+                    // Assign CSS to the textLayer element
+                    var textLayer = document.querySelector(".textLayer");
+
+                    // Pass the data to the method for rendering of text over the pdf canvas.
+                    pdfjsLib.renderTextLayer({
+                        textContent: textContent,
+                        container: textLayer,
+                        viewport: viewport,
+                        textDivs: [],
+                    });
+                    //console.log(textContent);
+                    //console.log(typeof(textContent.items[0]));
+                    texto_a_copiar = textContent.items[0].str
+                    for (let i = 0; i < textContent.items.length; i++) {
+                        let element = textContent.items[i].str;
+                        //console.log(element);
+                        texto_a_copiar += "\n" + element;
+                        //console.log(texto_a_copiar);
+                    }
+                });
+            });
+
+            // Update page counters
+            document.getElementById('page_num').textContent = num;
+        }
+
+        let texto_a_copiar;
+
+        function copiado() {
+            let clipboard1 = new ClipboardJS('#copy');
+
+            gsap.registerPlugin(TextPlugin);
+            gsap.to('#copy', {
+                duration: 2,
+                text: {
+                    value: "Copiado",
+                    newClass: "class2",
+                },
+                ease: "power4"
+            });
+            console.log(texto_a_copiar);
+            return texto_a_copiar;
+        }
+
+        /**
+         * If another page rendering in progress, waits until the rendering is
+         * finised. Otherwise, executes rendering immediately.
+         */
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        /**
+         * Displays previous page.
+         */
+        function onPrevPage() {
+            if (pageNum <= 1) {
+                return;
+            }
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+        document.getElementById('prev').addEventListener('click', onPrevPage);
+
+        /**
+         * Displays next page.
+         */
+        function onNextPage() {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+        document.getElementById('next').addEventListener('click', onNextPage);
+
+
+        /**
+         * Asynchronously downloads PDF.
+         */
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            document.getElementById('page_count').textContent = pdfDoc.numPages;
+            // Initial/first page rendering
+            renderPage(pageNum);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.10/clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/TextPlugin.min.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/CSS/index.css">
+    <title>Velneo PDF Reader</title>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <h1>
+                <span> OPCION </span>2</h1>
+        </div>
+        <nav>
+            <ul>
+                <li>
+                    <a href="/OPTION1/index.html">option 1</a>
+                </li>
+                <li>
+                    <a href="index.html">option 2</a>
+                </li>
+                <li>
+                    <a href="/OPTION3/index.html">option 3</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container">
+        <form action="recibe.html" id="form">
+            <div class="col1">
+                <h2>
+                    Sube aquí tu archivo
+                </h2>
+                <input type="file" name="PDF" id="PDF" onchange="convertToBase64();">
+            </div>
+            <div class="col2">
+                <button type="submit" id="submit">Enviar datos</button>
+            </div>
+            <p>Los archivos tienen que ser menores a 5 MB</p>
+        </form>
+    </div>
+    <script src="/JS/index.js"></script>
+</body>
+
+</html>
